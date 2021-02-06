@@ -16,7 +16,7 @@ from app.decorators import role_required
 from app.models import Classroom, User, Role, Video
 
 
-@bp.route('/', methods=['GET', 'POST'])
+@bp.route('/add', methods=['GET', 'POST'])
 @login_required
 @role_required('Professor')
 def add_video():
@@ -54,23 +54,10 @@ def add_video():
 
         output = model(input)
         for example in output:
-
-            
             data = decoder(example.cpu())
-            print('Original Text : ', data)
-            
-            # segmented_data = segmenter.segment_long(data)
-            # print('Segmented Data : ', segmented_data)
-            
-            # data = '. '.join(segmented_data)
-            # print('Text : ', data)
-            
             summary, data = get_summary(args, data, device, predictor)
-            print('Summary : ', summary)
         
-        
-        
-        
+            
         classroom = Classroom.query.filter_by(id=int(form.classname.data)).first_or_404()
         video = Video(file = file_name, name = form.name.data, creator_id = current_user.id, original_text = data, summary = summary)
         video.classes.append(classroom)
@@ -88,3 +75,29 @@ def show_video(classroom_id, video_id):
     video = Video.query.filter_by(id = video_id).first()
     classroom = Classroom.query.filter_by(id = classroom_id).first()
     return render_template('video/display_video.html', video = video, classroom = classroom)
+
+
+@bp.route('/', methods=['GET', 'POST'])
+@login_required
+def list_videos():
+    user_id = current_user.id
+    
+    _role = Role.query.filter_by(id=current_user.role_id).first()
+    if _role.name == 'Student':
+        classes = User.query.filter_by(id = current_user.id).first().classroom.all()
+    else:
+        classes = Classroom.query.filter_by(creator_id = current_user.id).all()
+        
+    videos = []
+    for classroom in classes:
+        videos.extend(classroom.video.all())
+    
+    class_ids = []
+    class_names = []
+    for video in videos:
+        classroom = video.classes.first()
+        class_ids.append(classroom.id)
+        class_names.append(classroom.name)
+        
+    return render_template('video/list_videos.html', videos = videos, class_ids = class_ids, 
+                           class_names = class_names)    
