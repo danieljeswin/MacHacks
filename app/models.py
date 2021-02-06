@@ -161,7 +161,7 @@ class Subject(db.Model):
     @staticmethod
     def insert_subjects():
         # Some testing subjects
-        for _subject in ['Math', 'Science', 'History', 'English', 'Spanish']:
+        for _subject in ['Business', 'Data Science', 'Media', 'Statistics']:
             db.session.add(Subject(name=_subject))
         db.session.commit()
 

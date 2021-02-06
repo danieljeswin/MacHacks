@@ -106,8 +106,8 @@ def initialize(args):
     opt = vars(checkpoint['opt'])
     for k in opt.keys():
         if (k in model_flags):
-            setattr(args, k, opt[k])
-
+            args[k] = opt[k]
+            
     model = AbsSummarizer(args, device, checkpoint)
     model.eval()
 
