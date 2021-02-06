@@ -4,9 +4,13 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import current_user, login_required
 from sqlalchemy import func
+from glob import glob
+import subprocess
+
 
 from app import db
 from app.video import bp
+from app.text_summarization.summarize import get_summary
 from app.video.forms import AddVideoForm
 from app.decorators import role_required
 from app.models import Classroom, User, Role, Video
@@ -25,10 +29,50 @@ def add_video():
         id += 1
         file_name = 'file' + str(id)
         data = request.files[form.video.name].read()
-        open(os.path.join(current_app.config['UPLOAD_PATH'], file_name), 'wb').write(data)
+        upload_path = os.path.join(current_app.config['UPLOAD_PATH'], file_name)
+        open(upload_path, 'wb').write(data)
+        
+        
+        audio_path = os.path.join(current_app.config['AUDIO_PATH'], 'audio.wav')
+        command = "ffmpeg -i " + upload_path + " -ab 160k -ac 2 -ar 44100 -vn -y " + audio_path
+        subprocess.call(command, shell=True)
+        
+        
+        model = current_app.config['model']
+        utils = current_app.config['utils']
+        device = current_app.config['device']
+        args = current_app.config['args']
+        predictor = current_app.config['predictor']
+        segmenter = current_app.config['segmenter']
+        decoder = current_app.config['decoder']
+        (read_batch, split_into_batches, read_audio, prepare_model_input) = utils 
+
+        test_files = glob(audio_path)
+        batches = split_into_batches(test_files, batch_size=10)
+        input = prepare_model_input(read_batch(batches[0]),
+                                    device=device)
+
+        output = model(input)
+        for example in output:
+
+            
+            data = decoder(example.cpu())
+            print('Original Text : ', data)
+            
+            # segmented_data = segmenter.segment_long(data)
+            # print('Segmented Data : ', segmented_data)
+            
+            # data = '. '.join(segmented_data)
+            # print('Text : ', data)
+            
+            summary, data = get_summary(args, data, device, predictor)
+            print('Summary : ', summary)
+        
+        
+        
         
         classroom = Classroom.query.filter_by(id=int(form.classname.data)).first_or_404()
-        video = Video(file = file_name, name = form.name.data, creator_id = current_user.id)
+        video = Video(file = file_name, name = form.name.data, creator_id = current_user.id, original_text = data, summary = summary)
         video.classes.append(classroom)
         
 

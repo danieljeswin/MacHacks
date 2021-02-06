@@ -146,6 +146,7 @@ class Video(db.Model):
     name = db.Column(db.String(100)) 
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     summary = db.Column(db.String(1024))
+    original_text = db.Column(db.String(5000))
     classes = db.relationship('Classroom', secondary=class_videos, lazy='dynamic',
                                backref=db.backref('video', lazy='dynamic'))
     

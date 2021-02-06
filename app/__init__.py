@@ -6,6 +6,13 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from config import Config
 
+import sys
+import torch
+
+sys.path.append('/home/daniel/NLP/PreSumm/src')
+
+from app.text_summarization.summarize import get_args, build_predictor, get_segmenter, initialize
+
 
 
 db = SQLAlchemy()
@@ -15,6 +22,13 @@ login.login_message = 'Please log in to access this page.'
 bootstrap = Bootstrap()
 moment = Moment()
 
+device = torch.device('cpu')
+
+model, decoder, utils = torch.hub.load(repo_or_dir='snakers4/silero-models',
+                                       model='silero_stt',
+                                       language='en', # also available 'de', 'es'
+                                       device=device)
+
 
 
 
@@ -22,6 +36,18 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     app.config['UPLOAD_PATH'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
+    app.config['AUDIO_PATH'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'audio')
+    
+    args = get_args()
+    predictor = initialize(args)
+    segmenter = get_segmenter()
+    app.config['args'] = args
+    app.config['segmenter'] = segmenter
+    app.config['predictor'] = predictor
+    app.config['device'] = 'cpu'
+    app.config['utils'] = utils
+    app.config['decoder'] = decoder
+    app.config['model'] = model
 
 
     db.init_app(app)
