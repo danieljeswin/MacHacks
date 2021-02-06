@@ -54,8 +54,8 @@ class AbsSummarizer(nn.Module):
 
         if (args.encoder == 'baseline'):
             bert_config = BertConfig(self.bert.model.config.vocab_size, hidden_size=args.enc_hidden_size,
-                                     num_hidden_layers=args.enc_layers, num_attention_heads=8,
-                                     intermediate_size=args.enc_ff_size,
+                                     num_hidden_layers=args['enc_layers'], num_attention_heads=8,
+                                     intermediate_size=args['enc_ff_size'],
                                      hidden_dropout_prob=args.enc_dropout,
                                      attention_probs_dropout_prob=args.enc_dropout)
             self.bert.model = BertModel(bert_config)

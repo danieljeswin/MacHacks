@@ -37,42 +37,40 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-task", default='abs', type=str, choices=['ext', 'abs'])
-    parser.add_argument("-encoder", default='bert', type=str, choices=['bert', 'baseline'])
-    parser.add_argument("-mode", default='test_text', type=str, choices=['train', 'validate', 'test', 'test_text'])
-    parser.add_argument("-bert_data_path", default='/home/daniel/NLP/PreSumm/bert_data_new/cnndm')
-    parser.add_argument("-model_path", default='/home/daniel/NLP/PreSumm/models/')
-    parser.add_argument("-result_path", default='/home/daniel/NLP/PreSumm/results/cnndm')
-    parser.add_argument("-temp_dir", default='/home/daniel/NLP/PreSumm/temp')
-    parser.add_argument("-text_src", default='')
-    parser.add_argument("-text_tgt", default='')
+    config = {}
+    config['task'] = 'abs'
+    config['encoder'] = 'bert'
+    config['mode'] = 'test_text'
+    config['bert_data_path'] = '/home/daniel/NLP/PreSumm/bert_data_new/cnndm'
+    config['model_path'] = '/home/daniel/NLP/PreSumm/models/'  
+    config['result_path'] = '/home/daniel/NLP/PreSumm/results/cnndm'
+    config['temp_dir'] = '/home/daniel/NLP/PreSumm/temp'
+    config['text_src'] = ''
+    config['text_tgt'] = ''
+    config['batch_size'] = 140
+    config['test_batch_size'] = 200
+    config['max_ndocs_in_batch'] = 6
+    config['max_pos'] = 512
+    config['use_interval'] = True
+    config['large'] = False
+    config['load_from_extractive'] = ''
+    config['sep_optim'] = False
+    config['lr_bert'] = 2e-3
+    config['lr_dec'] = 2e-3
+    config['use_bert_emb'] = False
+    config['share_emb'] = False
+    config['finetune_bert'] = True
+    config['dec_dropout'] = 0.2
+    config['dec_layers'] = 6
+    config['dec_hidden_size'] = 768
+    config['dec_heads'] = 8
+    config['dec_ff_size'] = 2048
+    config['enc_hidden_size'] = 512
+    config['enc_ff_size'] = 512
+    config['enc_dropout'] = 0.2
+    config['enc_layers'] = 6
 
-    parser.add_argument("-batch_size", default=140, type=int)
-    parser.add_argument("-test_batch_size", default=200, type=int)
-    parser.add_argument("-max_ndocs_in_batch", default=6, type=int)
 
-    parser.add_argument("-max_pos", default=512, type=int)
-    parser.add_argument("-use_interval", type=str2bool, nargs='?',const=True,default=True)
-    parser.add_argument("-large", type=str2bool, nargs='?',const=True,default=False)
-    parser.add_argument("-load_from_extractive", default='', type=str)
-
-    parser.add_argument("-sep_optim", type=str2bool, nargs='?',const=True,default=False)
-    parser.add_argument("-lr_bert", default=2e-3, type=float)
-    parser.add_argument("-lr_dec", default=2e-3, type=float)
-    parser.add_argument("-use_bert_emb", type=str2bool, nargs='?',const=True,default=False)
-
-    parser.add_argument("-share_emb", type=str2bool, nargs='?', const=True, default=False)
-    parser.add_argument("-finetune_bert", type=str2bool, nargs='?', const=True, default=True)
-    parser.add_argument("-dec_dropout", default=0.2, type=float)
-    parser.add_argument("-dec_layers", default=6, type=int)
-    parser.add_argument("-dec_hidden_size", default=768, type=int)
-    parser.add_argument("-dec_heads", default=8, type=int)
-    parser.add_argument("-dec_ff_size", default=2048, type=int)
-    parser.add_argument("-enc_hidden_size", default=512, type=int)
-    parser.add_argument("-enc_ff_size", default=512, type=int)
-    parser.add_argument("-enc_dropout", default=0.2, type=float)
-    parser.add_argument("-enc_layers", default=6, type=int)
 
     # params for EXT
     parser.add_argument("-ext_dropout", default=0.2, type=float)
