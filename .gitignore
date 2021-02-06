@@ -1,0 +1,7 @@
+app.db
+
+.vscode
+__pycache__
+
+app/static/file*
+app/audio

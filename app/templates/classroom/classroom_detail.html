@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ classroom.name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group mr-2">
+            <a href="{{url_for('classroom.add_student_to_classroom', classroom_id=classroom.id)}}"><button
+                    class="btn btn-sm btn-outline-secondary">Add Student</button></a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <h1 class="h3">Roster</h1>
+            <table class="table table-bordered table-hover" id="tab_logic">
+                <thead>
+                    <tr>
+                        <th class="text-center">
+                            #
+                        </th>
+                        <th class="text-center">
+                            Name
+                        </th>
+                        <th class="text-center">
+                            Remove Student
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in classroom.students %}
+                    <tr id="{{student.id}}">
+                        <td>{{student.id}}</td>
+                        <td>{{student.username}}</td>
+                        <td><a data-key="{{student.id}}" class="remove_student" 
+                            href="{{url_for('classroom.remove_student_from_classroom', classroom_id=classroom.id, student_id=student.id)}}" 
+                            data-method="delete">Remove Student</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <h1 class="h3">Videos</h1>
+            <table class="table table-bordered table-hover" id="tab_logic">
+                <thead>
+                    <tr>
+                        <th class="text-center">
+                            #
+                        </th>
+                        <th class="text-center">
+                            Name
+                        </th>
+                        <th class="text-center">
+                            Link
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for video in videos %}
+                    <tr id="{{video.id}}">
+                        <td>{{video.id}}</td>
+                        <td>{{video.name}}</td>
+                        <td><a data-key="{{video.id}}" class="display_video" href="{{url_for('video.show_video', classroom_id=classroom.id, video_id=video.id)}}">Click Here</a></td>  
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+$(document).ready(function () {
+    $(".remove_student").click(function (e) {
+        e.preventDefault()
+    }
+});
+{% endblock %}
