@@ -12,7 +12,7 @@ from app.text_summarization.others.utils import tile
 from app.text_summarization.translate.beam import GNMTGlobalScorer
 
 def build_predictor(args, tokenizer, symbols, model, logger=None):
-    scorer = GNMTGlobalScorer(args.alpha,length_penalty='wu')
+    scorer = GNMTGlobalScorer(args['alpha'],length_penalty='wu')
 
     translator = Translator(args, model, tokenizer, symbols, global_scorer=scorer, logger=logger)
     return translator
@@ -48,7 +48,7 @@ class Translator(object):
                  logger=None,
                  dump_beam=""):
         self.logger = logger
-        self.cuda = args.visible_gpus != '-1'
+        self.cuda = args['visible_gpus'] != '-1'
 
         self.args = args
         self.model = model
@@ -59,9 +59,9 @@ class Translator(object):
         self.end_token = symbols['EOS']
 
         self.global_scorer = global_scorer
-        self.beam_size = args.beam_size
-        self.min_length = args.min_length
-        self.max_length = args.max_length
+        self.beam_size = args['beam_size']
+        self.min_length = args['min_length']
+        self.max_length = args['max_length']
 
         self.dump_beam = dump_beam
 
@@ -95,11 +95,6 @@ class Translator(object):
             pred_sents = self.vocab.convert_ids_to_tokens([int(n) for n in preds[b][0]])
             pred_sents = ' '.join(pred_sents).replace(' ##','')
             gold_sent = ' '.join(tgt_str[b].split())
-            # translation = Translation(fname[b],src[:, b] if src is not None else None,
-            #                           src_raw, pred_sents,
-            #                           attn[b], pred_score[b], gold_sent,
-            #                           gold_score[b])
-            # src = self.spm.DecodeIds([int(t) for t in translation_batch['batch'].src[0][5] if int(t) != len(self.spm)])
             raw_src = [self.vocab.ids_to_tokens[int(t)] for t in src[b]][:500]
             raw_src = ' '.join(raw_src)
             translation = (pred_sents, gold_sent, raw_src)
@@ -113,26 +108,15 @@ class Translator(object):
                   attn_debug=False):
 
         self.model.eval()
-        # gold_path = self.args.result_path + '.%d.gold' % step
-        # can_path = self.args.result_path + '.%d.candidate' % step
-        # self.gold_out_file = codecs.open(gold_path, 'w', 'utf-8')
-        # self.can_out_file = codecs.open(can_path, 'w', 'utf-8')
 
-
-        # raw_src_path = self.args.result_path + '.%d.raw_src' % step
-        # self.src_out_file = codecs.open(raw_src_path, 'w', 'utf-8')
 
         summarized_strings = []
         source_strings = []
-
-        # pred_results, gold_results = [], []
         ct = 0
         with torch.no_grad():
             for batch in data_iter:
-                if(self.args.recall_eval):
+                if(self.args['recall_eval']):
                     gold_tgt_len = batch.tgt.size(1)
-                    # self.min_length = gold_tgt_len + 20
-                    # self.max_length = gold_tgt_len + 60
                     self.min_length = gold_tgt_len + 10
                     self.max_length = gold_tgt_len + 20
                 batch_data = self.translate_batch(batch)
@@ -142,20 +126,7 @@ class Translator(object):
                     pred, gold, src = trans
                     pred_str = pred.replace('[unused0]', '').replace('[unused3]', '').replace('[PAD]', '').replace('[unused1]', '').replace(r' +', ' ').replace(' [unused2] ', '<q>').replace('[unused2]', '').strip()
                     gold_str = gold.strip()
-                    if(self.args.recall_eval):
-                        # _pred_str = ''
-                        # for sent in pred_str.split('<q>'):
-                        #     can_pred_str = _pred_str+ '<q>'+sent.strip()
-                        #     can_gap = math.fabs(len(_pred_str.split())-len(gold_str.split()))
-                        #     # if(can_gap>=gap):
-                        #     if(len(can_pred_str.split())>=len(gold_str.split())+10):
-                        #         pred_str = _pred_str
-                        #         break
-                        #     else:
-                        #         _pred_str = can_pred_str
-
-
-
+                    if(self.args['recall_eval']):
                         pred_str = ' '.join(pred_str.split()[:len(gold_str.split())])
 
                     summarized_strings.append(pred_str)
@@ -264,7 +235,7 @@ class Translator(object):
             # Flatten probs into a list of possibilities.
             curr_scores = log_probs / length_penalty
 
-            if(self.args.block_trigram):
+            if(self.args['block_trigram']):
                 cur_len = alive_seq.size(1)
                 if(cur_len>3):
                     for i in range(alive_seq.size(0)):

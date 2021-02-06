@@ -82,7 +82,7 @@ def load_dataset(args, corpus_type, shuffle):
         return dataset
 
     # Sort the glob output by file name (by increasing indexes).
-    pts = sorted(glob.glob(args.bert_data_path + '.' + corpus_type + '.[0-9]*.pt'))
+    pts = sorted(glob.glob(args['bert_data_path'] + '.' + corpus_type + '.[0-9]*.pt'))
     if pts:
         if (shuffle):
             random.shuffle(pts)
@@ -91,7 +91,7 @@ def load_dataset(args, corpus_type, shuffle):
             yield _lazy_dataset_loader(pt, corpus_type)
     else:
         # Only one inputters.*Dataset, simple!
-        pt = args.bert_data_path + '.' + corpus_type + '.pt'
+        pt = args['bert_data_path'] + '.' + corpus_type + '.pt'
         yield _lazy_dataset_loader(pt, corpus_type)
 
 
@@ -176,7 +176,7 @@ class DataIterator(object):
         self.sort_key = lambda x: len(x[1])
 
         self._iterations_this_epoch = 0
-        if (self.args.task == 'abs'):
+        if (self.args['task'] == 'abs'):
             self.batch_size_fn = abs_batch_size_fn
         else:
             self.batch_size_fn = ext_batch_size_fn
@@ -194,19 +194,19 @@ class DataIterator(object):
 
     def preprocess(self, ex, is_test):
         src = ex['src']
-        tgt = ex['tgt'][:self.args.max_tgt_len][:-1]+[2]
+        tgt = ex['tgt'][:self.args['max_tgt_len']][:-1]+[2]
         src_sent_labels = ex['src_sent_labels']
         segs = ex['segs']
-        if(not self.args.use_interval):
+        if(not self.args['use_interval']):
             segs=[0]*len(segs)
         clss = ex['clss']
         src_txt = ex['src_txt']
         tgt_txt = ex['tgt_txt']
 
         end_id = [src[-1]]
-        src = src[:-1][:self.args.max_pos - 1] + end_id
-        segs = segs[:self.args.max_pos]
-        max_sent_id = bisect.bisect_left(clss, self.args.max_pos)
+        src = src[:-1][:self.args['max_pos'] - 1] + end_id
+        segs = segs[:self.args['max_pos']]
+        max_sent_id = bisect.bisect_left(clss, self.args['max_pos'])
         src_sent_labels = src_sent_labels[:max_sent_id]
         clss = clss[:max_sent_id]
         # src_txt = src_txt[:max_sent_id]
@@ -227,13 +227,13 @@ class DataIterator(object):
             if(ex is None):
                 continue
             minibatch.append(ex)
-            size_so_far = self.batch_size_fn(ex, len(minibatch), self.args.max_ndocs_in_batch)
+            size_so_far = self.batch_size_fn(ex, len(minibatch), self.args['max_ndocs_in_batch'])
             if size_so_far == batch_size:
                 yield minibatch
                 minibatch, size_so_far = [], 0
             elif size_so_far > batch_size:
                 yield minibatch[:-1]
-                minibatch, size_so_far = minibatch[-1:], self.batch_size_fn(ex, len(minibatch), self.args.max_ndocs_in_batch)
+                minibatch, size_so_far = minibatch[-1:], self.batch_size_fn(ex, len(minibatch), self.args['max_ndocs_in_batch'])
         if minibatch:
             yield minibatch
 
@@ -242,13 +242,13 @@ class DataIterator(object):
         minibatch, size_so_far = [], 0
         for ex in data:
             minibatch.append(ex)
-            size_so_far = self.batch_size_fn(ex, len(minibatch), self.args.max_ndocs_in_batch)
+            size_so_far = self.batch_size_fn(ex, len(minibatch), self.args['max_ndocs_in_batch'])
             if size_so_far == batch_size:
                 yield minibatch
                 minibatch, size_so_far = [], 0
             elif size_so_far > batch_size:
                 yield minibatch[:-1]
-                minibatch, size_so_far = minibatch[-1:], self.batch_size_fn(ex, len(minibatch), self.args.max_ndocs_in_batch)
+                minibatch, size_so_far = minibatch[-1:], self.batch_size_fn(ex, len(minibatch), self.args['max_ndocs_in_batch'])
         if minibatch:
             yield minibatch
 
@@ -257,11 +257,10 @@ class DataIterator(object):
         data = self.data()
         for buffer in self.batch_buffer(data, self.batch_size * 300):
 
-            if (self.args.task == 'abs'):
-                p_batch = sorted(buffer, key=lambda x: len(x[2]))
-                p_batch = sorted(p_batch, key=lambda x: len(x[1]))
-            else:
-                p_batch = sorted(buffer, key=lambda x: len(x[2]))
+
+            p_batch = sorted(buffer, key=lambda x: len(x[2]))
+            p_batch = sorted(p_batch, key=lambda x: len(x[1]))
+
 
             p_batch = self.batch(p_batch, self.batch_size)
 
@@ -303,12 +302,12 @@ def load_text(args, source_fp, target_fp, device):
         src_subtokens = tokenizer.tokenize(raw)
         src_subtokens = ['[CLS]'] + src_subtokens + ['[SEP]']
         src_subtoken_idxs = tokenizer.convert_tokens_to_ids(src_subtokens)
-        src_subtoken_idxs = src_subtoken_idxs[:-1][:args.max_pos]
+        src_subtoken_idxs = src_subtoken_idxs[:-1][:args['max_pos']]
         src_subtoken_idxs[-1] = sep_vid
         _segs = [-1] + [i for i, t in enumerate(src_subtoken_idxs) if t == sep_vid]
         segs = [_segs[i] - _segs[i - 1] for i in range(1, len(_segs))]
         segments_ids = []
-        segs = segs[:args.max_pos]
+        segs = segs[:args['max_pos']]
         for i, s in enumerate(segs):
             if (i % 2 == 0):
                 segments_ids += s * [0]
@@ -377,12 +376,12 @@ def load_text_from_string(args, source_string, device):
         src_subtokens = tokenizer.tokenize(raw)
         src_subtokens = ['[CLS]'] + src_subtokens + ['[SEP]']
         src_subtoken_idxs = tokenizer.convert_tokens_to_ids(src_subtokens)
-        src_subtoken_idxs = src_subtoken_idxs[:-1][:args.max_pos]
+        src_subtoken_idxs = src_subtoken_idxs[:-1][:args['max_pos']]
         src_subtoken_idxs[-1] = sep_vid
         _segs = [-1] + [i for i, t in enumerate(src_subtoken_idxs) if t == sep_vid]
         segs = [_segs[i] - _segs[i - 1] for i in range(1, len(_segs))]
         segments_ids = []
-        segs = segs[:args.max_pos]
+        segs = segs[:args['max_pos']]
         for i, s in enumerate(segs):
             if (i % 2 == 0):
                 segments_ids += s * [0]

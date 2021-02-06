@@ -28,14 +28,6 @@ def get_summary(args, source_string, device, predictor):
     return summarized_string, source_string 
 
 
-def str2bool(v):
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 def get_args():
     config = {}
     config['task'] = 'abs'
@@ -69,69 +61,48 @@ def get_args():
     config['enc_ff_size'] = 512
     config['enc_dropout'] = 0.2
     config['enc_layers'] = 6
+    config['label_smoothing'] = 0.1
+    config['generator_shard_size'] = 32
+    config['alpha'] = 0.6
+    config['beam_size'] = 5
+    config['min_length'] = 15
+    config['max_length'] = 150
+    config['max_tgt_len'] = 140
+    config['param_init'] = 0
+    config['param_init_glorot'] = True
+    config['optim'] = 'adam'
+    config['lr'] = 1
+    config['beta1'] = 0.9
+    config['beta2'] = 0.999
+    config['warmup_steps'] = 8000
+    config['warmup_steps_bert'] = 8000
+    config['warmup_steps_dec'] = 8000
+    config['max_grad_norm'] = 0
+    config['save_checkpoint_steps'] = 5
+    config['accum_count'] = 1
+    config['report_every'] = 1
+    config['train_steps'] = 1000
+    config['recall_eval'] = False
+    config['visible_gpus'] = '-1'
+    config['gpu_ranks'] = [0]
+    config['log_file'] = '/home/daniel/NLP/PreSumm//logs/cnndm.log'
+    config['seed'] = 666
+    config['test_all'] = False
+    config['test_from'] = '/home/daniel/NLP/PreSumm/models/model_step_148000.pt'
+    config['test_start_from'] = -1
+    config['train_from'] = ''
+    config['report_rouge'] = True
+    config['block_trigram'] = True
+    config['world_size'] = 1
 
-
-
-    # params for EXT
-    parser.add_argument("-ext_dropout", default=0.2, type=float)
-    parser.add_argument("-ext_layers", default=2, type=int)
-    parser.add_argument("-ext_hidden_size", default=768, type=int)
-    parser.add_argument("-ext_heads", default=8, type=int)
-    parser.add_argument("-ext_ff_size", default=2048, type=int)
-
-    parser.add_argument("-label_smoothing", default=0.1, type=float)
-    parser.add_argument("-generator_shard_size", default=32, type=int)
-    parser.add_argument("-alpha",  default=0.6, type=float)
-    parser.add_argument("-beam_size", default=5, type=int)
-    parser.add_argument("-min_length", default=15, type=int)
-    parser.add_argument("-max_length", default=150, type=int)
-    parser.add_argument("-max_tgt_len", default=140, type=int)
-
-
-
-    parser.add_argument("-param_init", default=0, type=float)
-    parser.add_argument("-param_init_glorot", type=str2bool, nargs='?',const=True,default=True)
-    parser.add_argument("-optim", default='adam', type=str)
-    parser.add_argument("-lr", default=1, type=float)
-    parser.add_argument("-beta1", default= 0.9, type=float)
-    parser.add_argument("-beta2", default=0.999, type=float)
-    parser.add_argument("-warmup_steps", default=8000, type=int)
-    parser.add_argument("-warmup_steps_bert", default=8000, type=int)
-    parser.add_argument("-warmup_steps_dec", default=8000, type=int)
-    parser.add_argument("-max_grad_norm", default=0, type=float)
-
-    parser.add_argument("-save_checkpoint_steps", default=5, type=int)
-    parser.add_argument("-accum_count", default=1, type=int)
-    parser.add_argument("-report_every", default=1, type=int)
-    parser.add_argument("-train_steps", default=1000, type=int)
-    parser.add_argument("-recall_eval", type=str2bool, nargs='?',const=True,default=False)
-
-
-    parser.add_argument('-visible_gpus', default='-1', type=str)
-    parser.add_argument('-gpu_ranks', default='0', type=str)
-    parser.add_argument('-log_file', default='/home/daniel/NLP/PreSumm//logs/cnndm.log')
-    parser.add_argument('-seed', default=666, type=int)
-
-    parser.add_argument("-test_all", type=str2bool, nargs='?',const=True,default=False)
-    parser.add_argument("-test_from", default='/home/daniel/NLP/PreSumm/models/model_step_148000.pt')
-    parser.add_argument("-test_start_from", default=-1, type=int)
-
-    parser.add_argument("-train_from", default='')
-    parser.add_argument("-report_rouge", type=str2bool, nargs='?',const=True,default=True)
-    parser.add_argument("-block_trigram", type=str2bool, nargs='?', const=True, default=True)
-
-    args = parser.parse_args()
-    args.gpu_ranks = [int(i) for i in range(len(args.visible_gpus.split(',')))]
-    args.world_size = len(args.gpu_ranks)
-
-    return args
+    return config
 
 
 def initialize(args):
-    logger.info('Loading checkpoint from %s' % args.test_from)
-    device = "cpu" if args.visible_gpus == '-1' else "cuda"
+    logger.info('Loading checkpoint from %s' % args['test_from'])
+    device = "cpu" if args['visible_gpus'] == '-1' else "cuda"
 
-    checkpoint = torch.load(args.test_from, map_location=lambda storage, loc: storage)
+    checkpoint = torch.load(args['test_from'], map_location=lambda storage, loc: storage)
     opt = vars(checkpoint['opt'])
     for k in opt.keys():
         if (k in model_flags):
@@ -140,7 +111,7 @@ def initialize(args):
     model = AbsSummarizer(args, device, checkpoint)
     model.eval()
 
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, cache_dir=args.temp_dir)
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, cache_dir=args['temp_dir'])
     symbols = {'BOS': tokenizer.vocab['[unused0]'], 'EOS': tokenizer.vocab['[unused1]'],
                'PAD': tokenizer.vocab['[PAD]'], 'EOQ': tokenizer.vocab['[unused2]']}
 

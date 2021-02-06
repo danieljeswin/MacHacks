@@ -46,36 +46,36 @@ class AbsSummarizer(nn.Module):
         super(AbsSummarizer, self).__init__()
         self.args = args
         self.device = device
-        self.bert = Bert(args.large, args.temp_dir, args.finetune_bert)
+        self.bert = Bert(args['large'], args['temp_dir'], args['finetune_bert'])
 
         if bert_from_extractive is not None:
             self.bert.model.load_state_dict(
                 dict([(n[11:], p) for n, p in bert_from_extractive.items() if n.startswith('bert.model')]), strict=True)
 
-        if (args.encoder == 'baseline'):
-            bert_config = BertConfig(self.bert.model.config.vocab_size, hidden_size=args.enc_hidden_size,
+        if (args['encoder'] == 'baseline'):
+            bert_config = BertConfig(self.bert.model.config.vocab_size, hidden_size=args['enc_hidden_size'],
                                      num_hidden_layers=args['enc_layers'], num_attention_heads=8,
                                      intermediate_size=args['enc_ff_size'],
-                                     hidden_dropout_prob=args.enc_dropout,
-                                     attention_probs_dropout_prob=args.enc_dropout)
+                                     hidden_dropout_prob=args['enc_dropout'],
+                                     attention_probs_dropout_prob=args['enc_dropout'])
             self.bert.model = BertModel(bert_config)
 
-        if(args.max_pos>512):
-            my_pos_embeddings = nn.Embedding(args.max_pos, self.bert.model.config.hidden_size)
+        if(args['max_pos']>512):
+            my_pos_embeddings = nn.Embedding(args['max_pos'], self.bert.model.config.hidden_size)
             my_pos_embeddings.weight.data[:512] = self.bert.model.embeddings.position_embeddings.weight.data
             my_pos_embeddings.weight.data[512:] = self.bert.model.embeddings.position_embeddings.weight.data[-1][None,:].repeat(args.max_pos-512,1)
             self.bert.model.embeddings.position_embeddings = my_pos_embeddings
         self.vocab_size = self.bert.model.config.vocab_size
         tgt_embeddings = nn.Embedding(self.vocab_size, self.bert.model.config.hidden_size, padding_idx=0)
-        if (self.args.share_emb):
+        if (self.args['share_emb']):
             tgt_embeddings = self.bert.model.embeddings.word_embeddings
 
         self.decoder = TransformerDecoder(
-            self.args.dec_layers,
-            self.args.dec_hidden_size, heads=self.args.dec_heads,
-            d_ff=self.args.dec_ff_size, dropout=self.args.dec_dropout, embeddings=tgt_embeddings)
+            self.args['dec_layers'],
+            self.args['dec_hidden_size'], heads=self.args['dec_heads'],
+            d_ff=self.args['dec_ff_size'], dropout=self.args['dec_dropout'], embeddings=tgt_embeddings)
 
-        self.generator = get_generator(self.vocab_size, self.args.dec_hidden_size, device)
+        self.generator = get_generator(self.vocab_size, self.args['dec_hidden_size'], device)
         self.generator[0].weight = self.decoder.embeddings.weight
 
 
@@ -95,7 +95,7 @@ class AbsSummarizer(nn.Module):
                     xavier_uniform_(p)
                 else:
                     p.data.zero_()
-            if(args.use_bert_emb):
+            if(args['use_bert_emb']):
                 tgt_embeddings = nn.Embedding(self.vocab_size, self.bert.model.config.hidden_size, padding_idx=0)
                 tgt_embeddings.weight = copy.deepcopy(self.bert.model.embeddings.word_embeddings.weight)
                 self.decoder.embeddings = tgt_embeddings
