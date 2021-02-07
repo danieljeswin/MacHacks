@@ -55,7 +55,7 @@ def add_video():
         output = model(input)
         for example in output:
             data = decoder(example.cpu())
-            summary, data = get_summary(args, data, device, predictor)
+            summary, _ = get_summary(args, data, device, predictor)
         
             
         classroom = Classroom.query.filter_by(id=int(form.classname.data)).first_or_404()
